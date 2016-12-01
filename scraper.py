@@ -50,7 +50,7 @@ def validateURL(url):
         else:
             ext = os.path.splitext(url)[1]
         validURL = r.getcode() == 200
-        validFiletype = ext.lower() in ['.csv', '.xls', '.xlsx', '.pdf']
+        validFiletype = ext.lower() in ['.csv', '.xls', '.zip', '.xlsx', '.pdf']
         return validURL, validFiletype
     except:
         print ("Error validating URL.")
@@ -85,7 +85,7 @@ def convert_mth_strings ( mth_string ):
 #### VARIABLES 1.0
 
 entity_id = "FTRCDX_HDNHSFT_gov"
-url = "http://www.hdft.nhs.uk/about-us/freedomofinformation/publication-scheme/what-we-spend-and-how-we-spend-it/"
+url = "https://www.hdft.nhs.uk/about/trust/financial-information/"
 errors = 0
 data = []
 
@@ -98,20 +98,27 @@ soup = BeautifulSoup(html, 'lxml')
 #### SCRAPE DATA
 
 
-links = soup.find('table', 'DataGrid oDataGrid').find('tbody').find_all('a')
-for link in links:
-    try:
-        if '=Attachment' in link['href']:
-            url = 'http://www.hdft.nhs.uk'+link['href']
-            title = link['title'].strip()
-            if '20' not in title:
-                continue
-            csvMth = 'Y1'
-            csvYr = title.split('-')[0][-4:]
-            csvMth = convert_mth_strings(csvMth.upper())
-            data.append([csvYr, csvMth, url])
-    except:
-        break
+blocks = soup.find_all('ul','list--downloads')
+for block in blocks:
+    for link in block.find_all('a'):
+           if '.csv' in link['href']:
+                url = link['href']
+                title = link.text.strip()
+                if '20' not in title:
+                    continue
+                csvMth = title.split()[-2][:3]
+                csvYr = title.split('-')[0][-4:]
+                csvMth = convert_mth_strings(csvMth.upper())
+                data.append([csvYr, csvMth, url])
+           if '.zip' in link['href']:
+               url = link['href']
+               title = link.text.strip()
+               csvMth = 'Y1'
+               csvYr = title.split('-')[0][-4:]
+               csvMth = convert_mth_strings(csvMth.upper())
+               data.append([csvYr, csvMth, url])
+
+
 
 
 #### STORE DATA 1.0
