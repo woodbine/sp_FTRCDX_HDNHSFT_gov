@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-#### IMPORTS 1.0
+#### IMPORTS 1.1
 
 import os
 import re
@@ -8,6 +8,7 @@ import scraperwiki
 import urllib2
 from datetime import datetime
 from bs4 import BeautifulSoup
+import requests
 
 #### FUNCTIONS 1.0
 
@@ -37,19 +38,19 @@ def validateFilename(filename):
 
 def validateURL(url):
     try:
-        r = urllib2.urlopen(url)
+        r = requests.get(url, allow_redirects=True, timeout=20)
         count = 1
-        while r.getcode() == 500 and count < 4:
+        while r.status_code == 500 and count < 4:
             print ("Attempt {0} - Status code: {1}. Retrying.".format(count, r.status_code))
             count += 1
-            r = urllib2.urlopen(url)
+            r = requests.get(url, allow_redirects=True, timeout=20)
         sourceFilename = r.headers.get('Content-Disposition')
 
         if sourceFilename:
             ext = os.path.splitext(sourceFilename)[1].replace('"', '').replace(';', '').replace(' ', '')
         else:
             ext = os.path.splitext(url)[1]
-        validURL = r.getcode() == 200
+        validURL = r.status_code == 200
         validFiletype = ext.lower() in ['.csv', '.xls', '.zip', '.xlsx', '.pdf']
         return validURL, validFiletype
     except:
@@ -101,22 +102,20 @@ soup = BeautifulSoup(html, 'lxml')
 blocks = soup.find_all('ul','list--downloads')
 for block in blocks:
     for link in block.find_all('a'):
-           if '.csv' in link['href']:
-                url = link['href']
-                title = link.text.strip()
-                if '20' not in title:
-                    continue
-                csvMth = title.split()[-2][:3]
-                csvYr = title.split('-')[0][-4:]
-                csvMth = convert_mth_strings(csvMth.upper())
-                data.append([csvYr, csvMth, url])
-           if '.zip' in link['href']:
-               url = link['href']
-               title = link.text.strip()
-               csvMth = 'Y1'
-               csvYr = title.split('-')[0][-4:]
-               csvMth = convert_mth_strings(csvMth.upper())
-               data.append([csvYr, csvMth, url])
+        if '.csv' in link['href']:
+            url = link['href']
+            title = link.text.strip()
+            csvMth = title.split()[-2][:3]
+            csvYr = title.split()[-1]
+            csvMth = convert_mth_strings(csvMth.upper())
+            data.append([csvYr, csvMth, url])
+        if '.zip' in link['href']:
+            url = link['href']
+            title = link.text.strip()
+            csvMth = 'Y1'
+            csvYr = title.split('-')[0][-4:]
+            csvMth = convert_mth_strings(csvMth.upper())
+            data.append([csvYr, csvMth, url])
 
 
 
